@@ -172,7 +172,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     },
     bottomBar = {
       if (oneHandUI.value) {
-        Column(Modifier.padding(end = endPadding)) {
+        Column(Modifier.padding(end = endPadding).imePadding()) {
           Divider()
           ChatListToolbar(
             scaffoldState.drawerState,
@@ -208,6 +208,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
             }
           },
           Modifier
+            .navigationBarsPadding()
             .padding(end = DEFAULT_PADDING - 16.dp + endPadding, bottom = DEFAULT_PADDING - 16.dp)
             .size(AppBarHeight * fontSizeSqrtMultiplier),
           elevation = FloatingActionButtonDefaults.elevation(
@@ -395,6 +396,7 @@ private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableSt
     },
     onTitleClick = null,
     showSearch = false,
+    onTop = !oneHandUI.value,
     onSearchValueChanged = {},
     buttons = barButtons
   )

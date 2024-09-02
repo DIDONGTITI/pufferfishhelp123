@@ -194,6 +194,7 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
     },
     onTitleClick = null,
     showSearch = showSearch,
+    onTop = !remember { appPrefs.oneHandUI.state }.value,
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
   )

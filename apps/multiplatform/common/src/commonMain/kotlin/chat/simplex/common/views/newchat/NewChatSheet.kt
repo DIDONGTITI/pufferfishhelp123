@@ -226,6 +226,8 @@ private fun NewChatSheetLayout(
         )
         if (!oneHandUI.value) {
           Divider()
+        } else {
+          Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
         }
       }
     }
@@ -594,6 +596,8 @@ private fun DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats: () -> Un
       item {
         if (!oneHandUI.value) {
           Divider()
+        } else {
+          Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.ime))
         }
         ContactsSearchBar(
           listState = listState,

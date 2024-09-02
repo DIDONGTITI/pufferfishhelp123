@@ -42,7 +42,6 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlin.math.sqrt
 
 data class SettingsViewState(
   val userPickerState: MutableStateFlow<AnimatedViewState>,
@@ -53,10 +52,8 @@ data class SettingsViewState(
 fun AppScreen() {
   AppBarHandler.appBarMaxHeightPx = with(LocalDensity.current) { AppBarHeight.roundToPx() }
   SimpleXTheme {
-    ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
-      Surface(color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
-        MainScreen()
-      }
+    Surface(color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
+      MainScreen()
     }
   }
 }

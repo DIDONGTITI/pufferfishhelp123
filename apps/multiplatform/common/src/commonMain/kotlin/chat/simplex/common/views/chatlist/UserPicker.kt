@@ -145,6 +145,7 @@ fun UserPicker(
   val maxWidth = with(LocalDensity.current) { windowWidth() * density }
   Box(Modifier
     .fillMaxSize()
+    .safeDrawingPadding()
     .offset { IntOffset(if (newChat.isGone()) -maxWidth.value.roundToInt() else xOffset, 0) }
     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = { userPickerState.value = AnimatedViewState.HIDING })
     .padding(bottom = 10.dp, top = 10.dp)
