@@ -1,12 +1,13 @@
 ---
 title: Hosting your own SMP Server
-revision: 03.06.2024
+revision: 01.10.2024
 ---
 
 | Updated 28.05.2024 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [PL](/docs/lang/pl/SERVER.md) |
 
 ### Table of Contents
 
+- [TLDR](#tldr)
 - [Hosting your own SMP server](#hosting-your-own-smp-server)
   - [Overview](#overview)
   - [Installation](#installation)
@@ -29,6 +30,10 @@ revision: 03.06.2024
   - [Updating your SMP server](#updating-your-smp-server)
   - [Configuring the app to use the server](#configuring-the-app-to-use-the-server)
 
+# TLDR:
+
+TODO
+
 # Hosting your own SMP Server
 
 ## Overview
@@ -36,6 +41,12 @@ revision: 03.06.2024
 SMP server is the relay server used to pass messages in SimpleX network. SimpleX Chat apps have preset servers (for mobile apps these are smp11, smp12 and smp14.simplex.im), but you can easily change app configuration to use other servers.
 
 SimpleX clients only determine which server is used to receive the messages, separately for each contact (or group connection with a group member), and these servers are only temporary, as the delivery address can change.
+
+To create SMP server, you'll need:
+
+1. VPS or any other server.
+2. Your own domain, pointed at the server (`smp.example.com`)
+3. A basic Linux knowledge.
 
 _Please note_: when you change the servers in the app configuration, it only affects which servers will be used for the new contacts, the existing contacts will not automatically move to the new servers, but you can move them manually using ["Change receiving address"](../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#change-your-delivery-address-beta) button in contact/member information pages – it will be automated in the future.
 
@@ -82,8 +93,9 @@ Manual installation requires some preliminary actions:
    ```sh
    # For Ubuntu
    sudo ufw allow 5223/tcp
+   sudo ufw allow 443/tcp
    # For Fedora
-   sudo firewall-cmd --permanent --add-port=5223/tcp && \
+   sudo firewall-cmd --permanent --add-port=5223/tcp --add-port=443/tcp && \
    sudo firewall-cmd --reload
    ```
 
@@ -102,6 +114,7 @@ Manual installation requires some preliminary actions:
    LimitNOFILE=65535
    KillSignal=SIGINT
    TimeoutStopSec=infinity
+   AmbientCapabilities=CAP_NET_BIND_SERVICE
 
    [Install]
    WantedBy=multi-user.target
@@ -245,26 +258,26 @@ source_code: https://github.com/simplex-chat/simplexmq
 # condition_amendments: link
 
 # Server location and operator.
-server_country: <YOUR_SERVER_LOCATION>
-operator: <YOUR_NAME>
-operator_country: <YOUR_LOCATION>
-website: <WEBSITE_IF_AVAILABLE>
+# server_country: ISO-3166 2-letter code
+# operator: entity (organization or person name)
+# operator_country: ISO-3166 2-letter code
+# website:
 
 # Administrative contacts.
-#admin_simplex: SimpleX address
-admin_email: <EMAIL>
+# admin_simplex: SimpleX address
+# admin_email:
 # admin_pgp:
 # admin_pgp_fingerprint:
 
 # Contacts for complaints and feedback.
 # complaints_simplex: SimpleX address
-complaints_email: <COMPLAINTS_EMAIL>
+# complaints_email:
 # complaints_pgp:
 # complaints_pgp_fingerprint:
 
 # Hosting provider.
-hosting: <HOSTING_PROVIDER_NAME>
-hosting_country: <HOSTING_PROVIDER_LOCATION>
+# hosting: entity (organization or person name)
+# hosting_country: ISO-3166 2-letter code
 
 [STORE_LOG]
 # The server uses STM memory for persistence,
@@ -278,6 +291,7 @@ enable: on
 # they are preserved in the .bak file until the next restart.
 restore_messages: on
 expire_messages_days: 21
+expire_ntfs_hours: 24
 
 # Log daily server statistics to CSV file
 log_stats: on
@@ -294,11 +308,17 @@ new_queues: on
 # with the users who you want to allow creating messaging queues on your server.
 # create_password: password to create new queues (any printable ASCII characters without whitespace, '@', ':' and '/')
 
+# control_port_admin_password:
+# control_port_user_password:
+
 [TRANSPORT]
-# host is only used to print server address on start
-host: <your server domain/ip>
-port: 5223
+# Host is only used to print server address on start.
+# You can specify multiple server ports.
+host: <domain/ip>
+port: 5223,443
 log_tls_errors: off
+
+# Use `websockets: 443` to run websockets server in addition to plain TLS.
 websockets: off
 # control_port: 5224
 
@@ -310,7 +330,7 @@ websockets: off
 # required_host_mode: off
 
 # The domain suffixes of the relays you operate (space-separated) to count as separate proxy statistics.
-# own_server_domains: <your domain suffixes>
+# own_server_domains: 
 
 # SOCKS proxy port for forwarding messages to destination servers.
 # You may need a separate instance of SOCKS proxy for incoming single-hop requests.
@@ -326,7 +346,7 @@ websockets: off
 [INACTIVE_CLIENTS]
 # TTL and interval to check inactive clients
 disconnect: off
-# ttl: 43200
+# ttl: 21600
 # check_interval: 3600
 
 [WEB]
@@ -336,13 +356,13 @@ static_path: /var/opt/simplex/www
 # Run an embedded server on this port
 # Onion sites can use any port and register it in the hidden service config.
 # Running on a port 80 may require setting process capabilities.
-# http: 8000
+http: 8000
 
 # You can run an embedded TLS web server too if you provide port and cert and key files.
 # Not required for running relay on onion address.
-# https: 443
-# cert: /etc/opt/simplex/web.cert
-# key: /etc/opt/simplex/web.key
+https: 443
+cert: /root/simplex/smp/config/web.crt
+key: /root/simplex/smp/config/web.key
 ```
 
 ## Server security
@@ -526,6 +546,7 @@ SMP-server can also be deployed to be available via [Tor](https://www.torproject
      # smp-server hidden service host directory and port mappings
      HiddenServiceDir /var/lib/tor/simplex-smp/
      HiddenServicePort 5223 localhost:5223
+     HiddenServicePort 443 localhost:443
      ```
 
    - Create directories:
@@ -599,7 +620,9 @@ SMP-server versions starting from `v5.8.0-beta.0` can be configured to PROXY smp
 
 ## Server information page
 
-SMP-server versions starting from `v5.8.0` can be configured to serve Web page with server information that can include admin info, server info, provider info, etc. Run the following commands as `root` user.
+SMP server **SHOULD** be configured to serve Web page with server information that can include admin info, server info, provider info, etc. It will also serve connection links, generated using the mobile/desktop apps. Run the following commands as `root` user.
+
+_Please note:_ this configuration is supported since `v6.1.0-beta.2`.
 
 1. Add the following to your smp-server configuration (please modify fields in [INFORMATION] section to include relevant information):
 
@@ -608,8 +631,19 @@ SMP-server versions starting from `v5.8.0` can be configured to serve Web page w
    ```
 
    ```ini
+   [TRANSPORT]
+   # host is only used to print server address on start
+   host: <domain/ip>
+   port: 443,5223
+   websockets: off
+   log_tls_errors: off
+   control_port: 5224
+
    [WEB]
+   https: 443
    static_path: /var/opt/simplex/www
+   cert: /etc/opt/simplex/letsencrypt.crt
+   key: /etc/opt/simplex/letsencrypt.key
 
    [INFORMATION]
    # AGPLv3 license requires that you make any source code modifications
@@ -650,56 +684,86 @@ SMP-server versions starting from `v5.8.0` can be configured to serve Web page w
    hosting_country: <HOSTING_PROVIDER_LOCATION> 
    ```
 
-2. Install the webserver. For easy deployment we'll describe the installtion process of [Caddy](https://caddyserver.com) webserver on Ubuntu server:
+2. Install the `certbot` to obtain your certificate:
 
    1. Install the packages:
 
       ```sh
-      sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+      sudo apt install python3-pip
       ```
 
-   2. Install caddy gpg key for repository:
+   2. Install certbot using pip3:
 
       ```sh
-      curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+      sudo pip3 install certbot
       ```
 
-   3. Install Caddy repository:
+   [Full Certbot instllation instructions](https://certbot.eff.org/instructions?ws=other&os=pip&tab=standard)
 
-      ```sh
-      curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-      ```
-
-   4. Install Caddy:
-
-      ```sh
-      sudo apt update && sudo apt install caddy
-      ```
-
-   [Full Caddy instllation instructions](https://caddyserver.com/docs/install)
-
-3. Replace Caddy configuration with the following (don't forget to replace `<YOUR_DOMAIN>`):
+3. Obtain your certificate:
 
    ```sh
-   vim /etc/caddy/Caddyfile
+   export DOMAIN=<your_domain> &&\
+   sudo certbot certonly --standalone -d "$DOMAIN" --key-type rsa --rsa-key-size 4096 --cert-name "$DOMAIN"-rsa-4096
    ```
 
-   ```caddy
-   <YOUR_DOMAIN> {
-     root * /var/opt/simplex/www
-     file_server
-   }
-   ```
-
-4. Enable and start Caddy service:
+4. Create cronjob to renew certificates in timely manner:
 
    ```sh
-   systemctl enable --now caddy
+   sudo crontab -e
    ```
 
-5. Upgrade your smp-server to latest version - [Updating your smp server](#updating-your-smp-server)
+   ```sh
+   # Every week on 00:00 sunday
+   0 0 * * 0 certbot renew -q
+   ```
 
-6. Access the webpage you've deployed from your browser. You should see the smp-server information that you've provided in your ini file.
+5. Create script to copy certificates to your smp directory:
+
+   Please replace `YOUR_DOMAIN` with your actual domain (smp.example.com).
+
+   ```sh
+   vim /usr/local/bin/simplex-servers-certs
+   ```
+
+   ```sh
+   #!/usr/bin/env sh
+   set -eu
+
+   user='smp'
+   group="$user"
+
+   domain='YOUR_DOMAIN'
+   folder_in="/etc/letsencrypt/live/${domain}-rsa-4096"
+   folder_out='/etc/opt/simplex'
+
+   cp "${folder_in}/fullchain.pem" "${folder_out}/letsencrypt.crt" && chown "$user":"$group" "${folder_out}/letsencrypt.crt"
+   cp "${folder_in}/privkey.pem" "${folder_out}/letsencrypt.key" && chown "$user":"$group" "${folder_out}/letsencrypt.key"
+   ```
+
+6. Make the script executable and execute it:
+
+   ```sh
+   chmod +x /usr/local/bin/simplex-servers-certs && /usr/local/bin/simplex-servers-certs
+   ```
+
+7. Create cronjob to copy certificates to smp directory in timely manner:
+
+   ```sh
+   sudo crontab -e
+   ```
+
+   ```sh
+   # Every week on 00:20 sunday
+   20 0 * * 0 /usr/local/bin/simplex-servers-certs
+   ```
+
+8. Then:
+
+   - If you're running at least `v6.1.0-beta.2`, [restart the server](#systemd-commands).
+   - If you're running below `v6.1.0-beta.2`, [upgrade the server](#updating-your-smp-server).
+
+9. Access the webpage you've deployed from your browser (`https://smp.example.org`). You should see the smp-server information that you've provided in your ini file.
 
 ## Documentation
 
@@ -793,7 +857,8 @@ You can enable `smp-server` statistics for `Grafana` dashboard by setting value 
 Logs will be stored as `csv` file in `/var/opt/simplex/smp-server-stats.daily.log`. Fields for the `csv` file are:
 
 ```sh
-fromTime,qCreated,qSecured,qDeleted,msgSent,msgRecv,dayMsgQueues,weekMsgQueues,monthMsgQueues,msgSentNtf,msgRecvNtf,dayCountNtf,weekCountNtf,monthCountNtf,qCount,msgCount,msgExpired,qDeletedNew,qDeletedSecured,pRelays_pRequests,pRelays_pSuccesses,pRelays_pErrorsConnect,pRelays_pErrorsCompat,pRelays_pErrorsOther,pRelaysOwn_pRequests,pRelaysOwn_pSuccesses,pRelaysOwn_pErrorsConnect,pRelaysOwn_pErrorsCompat,pRelaysOwn_pErrorsOther,pMsgFwds_pRequests,pMsgFwds_pSuccesses,pMsgFwds_pErrorsConnect,pMsgFwds_pErrorsCompat,pMsgFwds_pErrorsOther,pMsgFwdsOwn_pRequests,pMsgFwdsOwn_pSuccesses,pMsgFwdsOwn_pErrorsConnect,pMsgFwdsOwn_pErrorsCompat,pMsgFwdsOwn_pErrorsOther,pMsgFwdsRecv,qSub,qSubAuth,qSubDuplicate,qSubProhibited,msgSentAuth,msgSentQuota,msgSentLarge
+fromTime,qCreated,qSecured,qDeleted,msgSent,msgRecv,dayMsgQueues,weekMsgQueues,monthMsgQueues,msgSentNtf,msgRecvNtf,dayCountNtf,weekCountNtf,monthCountNtf,qCount,msgCount,msgExpired,qDeletedNew,qDeletedSecured,pRelays_pRequests,pRelays_pSuccesses,pRelays_pErrorsConnect,pRelays_pErrorsCompat,pRelays_pErrorsOther,pRelaysOwn_pRequests,pRelaysOwn_pSuccesses,pRelaysOwn_pErrorsConnect,pRelaysOwn_pErrorsCompat,pRelaysOwn_pErrorsOther,pMsgFwds_pRequests,pMsgFwds_pSuccesses,pMsgFwds_pErrorsConnect,pMsgFwds_pErrorsCompat,pMsgFwds_pErrorsOther,pMsgFwdsOwn_pRequests,pMsgFwdsOwn_pSuccesses,pMsgFwdsOwn_pErrorsConnect,pMsgFwdsOwn_pErrorsCompat,pMsgFwdsOwn_pErrorsOther,pMsgFwdsRecv,qSub,qSubAuth,qSubDuplicate,qSubProhibited,msgSentAuth,msgSentQuota,msgSentLarge,msgNtfs,msgNtfNoSub,msgNtfLost,qSubNoMsg,msgRecvGet,msgGet,msgGetNoMsg,msgGetAuth,msgGetDuplicate,msgGetProhibited,psSubDaily,psSubWeekly,psSubMonthly,qCount2,ntfCreated,ntfDeleted,ntfSub,ntfSubAuth,ntfSubDuplicate,ntfCount,qDeletedAllB,qSubAllB,qSubEnd,qSubEndB,ntfDeletedB,ntfSubB
+
 ```
 
 | Field number  | Field name                   | Field Description          |
@@ -856,6 +921,32 @@ fromTime,qCreated,qSecured,qDeleted,msgSent,msgRecv,dayMsgQueues,weekMsgQueues,m
 | 45            | `msgSentAuth`                | Authentication errors      |
 | 46            | `msgSentQuota`               | Quota errors               |
 | 47            | `msgSentLarge`               | Large message errors       |
+| 48            | `msgNtfs`                    | XXXXXXXXXXXXXXXXXXXX       |
+| 49            | `msgNtfNoSub`                | XXXXXXXXXXXXXXXXXXXX       |
+| 50            | `msgNtfLost`                 | XXXXXXXXXXXXXXXXXXXX       |
+| 51            | `qSubNoMsg`                  | Removed, always 0          |
+| 52            | `msgRecvGet`                 | XXXXXXXXXXXXXXXXX          |
+| 53            | `msgGet`                     | XXXXXXXXXXXXXXXXX          |
+| 54            | `msgGetNoMsg`                | XXXXXXXXXXXXXXXXX          |
+| 55            | `msgGetAuth`                 | XXXXXXXXXXXXXXXXX          |
+| 56            | `msgGetDuplicate`            | XXXXXXXXXXXXXXXXX          |
+| 57            | `msgGetProhibited`           | XXXXXXXXXXXXXXXXX          |
+| 58            | `psSub_dayCount`             | Removed, always 0          |
+| 59            | `psSub_weekCount`            | Removed, always 0          |
+| 60            | `psSub_monthCount`           | Removed, always 0          |
+| 61            | `qCount`                     | XXXXXXXXXXXXXXXXX          |
+| 62            | `ntfCreated`                 | XXXXXXXXXXXXXXXXX          |
+| 63            | `ntfDeleted`                 | XXXXXXXXXXXXXXXXX          |
+| 64            | `ntfSub`                     | XXXXXXXXXXXXXXXXX          |
+| 65            | `ntfSubAuth`                 | XXXXXXXXXXXXXXXXX          |
+| 66            | `ntfSubDuplicate`            | XXXXXXXXXXXXXXXXX          |
+| 67            | `ntfCount`                   | XXXXXXXXXXXXXXXXX          |
+| 68            | `qDeletedAllB`               | XXXXXXXXXXXXXXXXX          |
+| 69            | `qSubAllB`                   | XXXXXXXXXXXXXXXXX          |
+| 70            | `qSubEnd`                    | XXXXXXXXXXXXXXXXX          |
+| 71            | `qSubEndB`                   | XXXXXXXXXXXXXXXXX          |
+| 72            | `ntfDeletedB`                | XXXXXXXXXXXXXXXXX          |
+| 73            | `ntfSubB`                    | XXXXXXXXXXXXXXXXX          |
 
 To import `csv` to `Grafana` one should:
 
@@ -863,20 +954,20 @@ To import `csv` to `Grafana` one should:
 
 2. Allow local mode by appending following:
 
-  ```sh
-  [plugin.marcusolsson-csv-datasource]
-  allow_local_mode = true
-  ```
+   ```sh
+   [plugin.marcusolsson-csv-datasource]
+   allow_local_mode = true
+   ```
 
-  ... to `/etc/grafana/grafana.ini`
+   ... to `/etc/grafana/grafana.ini`
 
 3. Add a CSV data source:
 
-  - In the side menu, click the Configuration tab (cog icon)
-  - Click Add data source in the top-right corner of the Data Sources tab
-  - Enter "CSV" in the search box to find the CSV data source
-  - Click the search result that says "CSV"
-  - In URL, enter a file that points to CSV content
+   - In the side menu, click the Configuration tab (cog icon)
+   - Click Add data source in the top-right corner of the Data Sources tab
+   - Enter "CSV" in the search box to find the CSV data source
+   - Click the search result that says "CSV"
+   - In URL, enter a file that points to CSV content
 
 4. You're done! You should be able to create your own dashboard with statistics.
 
@@ -920,6 +1011,7 @@ To update your smp-server to latest version, choose your installation method and
         ```sh
         docker run -d \
           -p 5223:5223 \
+          -p 443:443 \
           -v $HOME/simplex/smp/config:/etc/opt/simplex:z \
           -v $HOME/simplex/smp/logs:/var/opt/simplex:z \
           simplexchat/smp-server:latest
